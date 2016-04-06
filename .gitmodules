@@ -1,0 +1,3 @@
+[submodule "multicast-ip-serverd/llog"]
+	path = multicast-ip-serverd/llog
+	url = https://github.com/jerett/llog

@@ -6,6 +6,7 @@
 #include <string.h>
 #include <cstring>
 
+#include "llog/llog.h"
 #include "ip_query.h"
 
 namespace {
@@ -18,11 +19,10 @@ int main (int argc, char *argv[]) {
     fprintf(stderr, "usage : <multicast_ip_serverd interface>\n");
     return EXIT_FAILURE;
   }
-  FILE *log_file = fopen("/var/log/multicast_ip_serverd.log", "w");
-  if (log_file == nullptr) {
-    perror("create log err:");
-    return EXIT_FAILURE;
-  }
+
+  ins::log_to_stderr = true;
+  ins::Configuration::GetInstance().Configure(ins::Configuration::LOG_FILE,
+                                              "/tmp/multicast_ip_serverd.log");
   daemon(0, 1);
   char *interface = argv[1];
 
@@ -46,11 +46,10 @@ int main (int argc, char *argv[]) {
     auto n = sendto(sockfd, ip.c_str(), ip.length(), 0,
                     (struct sockaddr*)&dest_addr, sizeof(dest_addr));
     if (n < 0) {
-      fprintf(log_file, "send ip err:%s\n", std::strerror(errno));
+      LOG(INFO) << "send ip err:" << std::strerror(errno);
     } else {
-      fprintf(log_file, "send ip:%s\n", ip.c_str());
+      LOG(INFO) << "send ip :" << ip;
     }
-    fflush(log_file);
     sleep(5);
   }
 }
