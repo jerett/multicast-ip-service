@@ -1,10 +1,12 @@
 #Intrudution
-muticast-ip-service provides service that client can obtain server's ip by multicasting .
-
+* muticast-ip-service provides service that client can obtain server's ip by multicasting .
+* different server can set different key to distinguish 
+ 
 #usage
+
 ##server
-* Server run a dameon process which multicast ip every 5 seconds 
-* usage: multicast_ip_serverd interface
+* Server run a dameon process which multicast ip every 2 seconds 
+* usage: multicast_ip_serverd interface key(option)
 
 ##client
 * Client attemp to get server ip via multicasting , and you can set a timeout.
@@ -14,7 +16,7 @@ muticast-ip-service provides service that client can obtain server's ip by multi
   ip_client.Open();
   std::string ip;
   ip_client.SetTimeout(5000);
-  ip_client.QueryServerIp(&ip);
+  ip_client.QueryServerIp("key", &ip);
  ```
  
  #plaform:
