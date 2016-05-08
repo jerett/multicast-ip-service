@@ -5,26 +5,29 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <cstring>
+#include <string>
 
 #include "llog/llog.h"
 #include "ip_query.h"
 
 namespace {
 const char *kGroupServerAddress = "224.0.0.88";
+std::string key("default");
 const int port = 7777;
 }
 
 int main (int argc, char *argv[]) {
-  if (argc != 2) {
-    fprintf(stderr, "usage : <multicast_ip_serverd interface>\n");
+  if (argc != 2 && argc != 3) {
+    fprintf(stderr, "usage : <multicast_ip_serverd interface key(optional)>\n");
     return EXIT_FAILURE;
   }
 
   ins::log_to_stderr = true;
   ins::Configuration::GetInstance().Configure(ins::Configuration::LOG_FILE,
                                               "/tmp/multicast_ip_serverd.log");
-  daemon(0, 1);
+//  daemon(0, 1);
   char *interface = argv[1];
+  if (argc == 3) key = argv[2];
 
   auto sockfd = socket(AF_INET, SOCK_DGRAM, 0); // 建立套接字
   if (sockfd == -1) {
@@ -43,13 +46,14 @@ int main (int argc, char *argv[]) {
   while(true){
     IpQuery query(interface);
     auto ip = query.Query();
-    auto n = sendto(sockfd, ip.c_str(), ip.length(), 0,
+    auto msg = ip + "-" + key;
+    auto n = sendto(sockfd, msg.c_str(), msg.length(), 0,
                     (struct sockaddr*)&dest_addr, sizeof(dest_addr));
     if (n < 0) {
       LOG(INFO) << "send ip err:" << std::strerror(errno);
     } else {
-      LOG(INFO) << "send ip :" << ip;
+      LOG(INFO) << "send ip :" << ip << " key:" << key;
     }
-    sleep(5);
+    sleep(2);
   }
 }

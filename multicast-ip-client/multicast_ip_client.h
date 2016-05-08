@@ -21,9 +21,15 @@ public:
   /**
    * if no timeout, will block unitil get msg
    */
-  bool QueryServerIp(std::string *ip) noexcept;
+  bool QueryServerIp(const std::string &key, std::string *ip) noexcept;
 
 private:
+  bool CheckMsgIsValidIP(const std::string &msg,
+                         const std::string &key,
+                         std::string *ip) const noexcept;
+
+private:
+  int timeout_ms_ = -1;
   constexpr static const char * kIpServerAddress = "224.0.0.88";
   const static int kIpServerPort = 7777;
   struct sockaddr_in local_addr_; // 本地地址

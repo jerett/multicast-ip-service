@@ -4,10 +4,15 @@
 
 #include "multicast_ip_client.h"
 
+
 #include <string.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <chrono>
+#include <regex>
+#include <iostream>
+#include <sstream>
 
 MulticastIpClient::MulticastIpClient() {
   udp_fd_ = socket(AF_INET, SOCK_DGRAM, 0);
@@ -38,6 +43,7 @@ bool MulticastIpClient::Open() noexcept {
 }
 
 bool MulticastIpClient::SetTimeout(int timeout_ms) noexcept {
+  timeout_ms_ = timeout_ms;
   struct timeval tv;
   tv.tv_sec = timeout_ms/1000;
   tv.tv_usec = (timeout_ms%1000) * 1000;
@@ -45,17 +51,47 @@ bool MulticastIpClient::SetTimeout(int timeout_ms) noexcept {
   return ret == 0;
 }
 
-bool MulticastIpClient::QueryServerIp(std::string *ip) noexcept {
-  char buff[1024] = {0};
-  socklen_t  sock_len;
-  // 接收数据
-  auto n = recvfrom(udp_fd_, buff, sizeof(buff), 0,
-                    (struct sockaddr*)&local_addr_, &sock_len);
-  if (n == -1) {
-    return false;
-  } else {
-    buff[n] = 0;
-    *ip = buff;
-    return true;
+bool MulticastIpClient::CheckMsgIsValidIP(const std::string &msg,
+                                          const std::string &key,
+                                          std::string *ip) const noexcept {
+  const std::regex pattern("(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})-(\\w*)");
+  std::match_results<std::string::const_iterator> result;
+  bool valid = std::regex_match(msg, result, pattern);
+  if (valid) {
+    if (result[5] == key) {
+      std::ostringstream oss;
+      oss << result[1] << "."
+          << result[2] << "."
+          << result[3] << "."
+          << result[4];
+      *ip = oss.str();
+      return true;
+    }
+  }
+  return false;
+}
+
+bool MulticastIpClient::QueryServerIp(const std::string &key,
+                                      std::string *ip) noexcept {
+  auto start_time = std::chrono::steady_clock::now();
+
+  while (true) {
+    char buff[1024] = {0};
+    socklen_t sock_len;
+    // 接收数据
+    auto n = recvfrom(udp_fd_, buff, sizeof(buff), 0,
+                      (struct sockaddr*)&local_addr_, &sock_len);
+    if (n == -1) {
+      return false;
+    } else {
+      buff[n] = 0;
+      if (CheckMsgIsValidIP(buff, key, ip)) {
+        return true;
+      }
+    }
+
+    auto end_time = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time-start_time);
+    if (duration.count() > timeout_ms_) return false;
   }
 }
