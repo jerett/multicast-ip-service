@@ -13,21 +13,53 @@
 namespace {
 const char *kGroupServerAddress = "224.0.0.88";
 std::string key("default");
+std::string interface;
 const int port = 7777;
 }
 
+void parse_cmd(int argc, char *argv[]) {
+  int oc;
+  while ((oc = getopt(argc, argv, "di:k:")) != -1) {
+    switch (oc){
+      case 'd': {
+        LOG(INFO) << "to run in daemon";
+        daemon(0, 1);
+        break;
+      }
+
+      case 'i': {
+        interface = optarg;
+        LOG(INFO) << "set interface:" << interface;
+        break;
+      }
+
+      case 'k': {
+        key = optarg;
+        LOG(INFO) << "set key:" << key;
+        break;
+      }
+
+      default:{
+        LOG(INFO) << "opt:" << oc;
+        break;
+      }
+    }
+  }
+}
+
+void usage() {
+  fprintf(stderr, "usage : <multicast_ip_serverd -i interface -k key(optional) -d(optional)>\n");
+}
+
 int main (int argc, char *argv[]) {
-  if (argc != 2 && argc != 3) {
-    fprintf(stderr, "usage : <multicast_ip_serverd interface key(optional)>\n");
+  ins::log_to_stderr = true;
+  ins::Configuration::GetInstance().Configure(ins::Configuration::LOG_FILE, "/tmp/multicast_ip_serverd.log");
+  parse_cmd(argc, argv);
+
+  if (interface.empty()) {
+    usage();
     return EXIT_FAILURE;
   }
-
-  ins::log_to_stderr = true;
-  ins::Configuration::GetInstance().Configure(ins::Configuration::LOG_FILE,
-                                              "/tmp/multicast_ip_serverd.log");
-//  daemon(0, 1);
-  char *interface = argv[1];
-  if (argc == 3) key = argv[2];
 
   auto sockfd = socket(AF_INET, SOCK_DGRAM, 0); // 建立套接字
   if (sockfd == -1) {
