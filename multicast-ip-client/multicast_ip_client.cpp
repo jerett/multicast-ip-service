@@ -54,7 +54,7 @@ bool MulticastIpClient::SetTimeout(int timeout_ms) noexcept {
 bool MulticastIpClient::CheckMsgIsValidIP(const std::string &msg,
                                           const std::string &key,
                                           std::string *ip) const noexcept {
-  const std::regex pattern("(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})-(\\w*)");
+  const std::regex pattern("(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})-(.*)");
   std::match_results<std::string::const_iterator> result;
   bool valid = std::regex_match(msg, result, pattern);
   if (valid) {
@@ -67,6 +67,8 @@ bool MulticastIpClient::CheckMsgIsValidIP(const std::string &msg,
       *ip = oss.str();
       return true;
     }
+  } else {
+    std::cerr << "invalid key:" << msg << std::endl;
   }
   return false;
 }
